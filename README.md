@@ -377,6 +377,18 @@ SMOKE PASS：74 通过 / 0 失败
 .\deploy.ps1 -DryRun         # 只看会做什么
 ```
 
+如果提示 **「在此系统上禁止运行脚本」**（Windows 默认执行策略是 Restricted），这样跑：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy.ps1
+```
+
+日常小改也可以不用脚本（地址永远不变，Pages 会自动重建）：
+
+```powershell
+git add -A; git commit -m "update: xxx"; git push
+```
+
 仓库名、包含/排除规则、验证地址都在 `publish.config.json`；完整流程与排障见 `PUBLISH.md`。
 纯静态站点，`_*` 开头的调试文件与 `*.out` 不会进仓库（见 `.gitignore`）。
 
