@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 应用开发 7 天 · 沙盒实训</title>
+<meta name="description" content="7 天从零跑通 AI 应用开发：21 个自动判分关卡 + 7 个闭卷挑战 + 56 道自测题 + 180 条命令词典，逐字拆解每条命令。全程浏览器沙盒，不用装任何东西。">
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <button id="btnMenu" class="icon-btn only-narrow" title="天列表" aria-label="天列表">☰</button>
+
+  <a class="brand" href="#/d1">
+    <span class="brand-mark">AI</span>
+    <span class="brand-text">应用开发 <b>7 天</b></span>
+  </a>
+
+  <div class="topbar-mid">
+    <div class="ring" id="ring"><span id="ringText">0%</span></div>
+    <div class="topbar-stat">
+      <span id="topStat">0 / 0 关</span>
+      <span id="topDay" class="muted"></span>
+    </div>
+  </div>
+
+  <div class="topbar-actions">
+    <button id="btnReport" class="ghost-btn">结业报告</button>
+    <button id="btnTheme" class="icon-btn" title="切换主题" aria-label="切换主题">◐</button>
+  </div>
+</header>
+
+<div class="shell">
+  <aside class="sidenav" id="sidenav">
+    <div class="sidenav-head">7 天路线</div>
+    <nav id="dayList" class="day-list"></nav>
+    <div id="sideExtra" class="side-extra"></div>
+    <div class="sidenav-foot">
+      <button id="btnResetAll" class="link-btn">清空全部进度</button>
+      <p class="sidenav-note">进度存在本机浏览器里，不上传。</p>
+    </div>
+  </aside>
+
+  <main class="content" id="content" tabindex="-1"></main>
+</div>
+
+<!-- ============================ 沙盒终端 ============================ -->
+<button id="termFab" class="fab" title="沙盒终端（快捷键 ~）" aria-label="沙盒终端">⌨</button>
+
+<section id="termPanel" class="term-panel" aria-label="沙盒终端">
+  <div id="termGripCorner" class="term-grip-corner" title="拖动改变宽高" aria-hidden="true"></div>
+  <div id="termGrip" class="term-grip" title="拖动改变高度" aria-hidden="true"></div>
+  <header class="term-head">
+    <span class="term-dot"></span>
+    <span id="termScenario" class="term-scenario">沙盒</span>
+    <span class="term-spacer"></span>
+    <span class="term-sizes" role="group" aria-label="高度档位">
+      <button class="term-btn" data-term-size="s" title="小窗">▁</button>
+      <button class="term-btn" data-term-size="m" title="中窗">▄</button>
+      <button class="term-btn" data-term-size="l" title="大窗">█</button>
+    </span>
+    <button id="termFontDown" class="term-btn" title="字号变小">A−</button>
+    <button id="termFontUp" class="term-btn" title="字号变大">A+</button>
+    <button id="termCopy" class="term-btn" title="复制全部输出">复制</button>
+    <button id="termHelp" class="term-btn" title="可用命令">help</button>
+    <button id="termReset" class="term-btn" title="重置这个工作区">⟳</button>
+    <button id="termFull" class="term-btn" title="全屏（Ctrl+Shift+F）" aria-label="全屏">⛶</button>
+    <button id="termClose" class="term-btn" title="收起">✕</button>
+  </header>
+  <div id="termOut" class="term-out"></div>
+  <div class="term-input-row">
+    <span id="termPrompt" class="term-prompt">student@ai-box:~$</span>
+    <input id="termInput" class="term-input" spellcheck="false" autocomplete="off"
+           autocapitalize="off" autocorrect="off" aria-label="命令输入">
+  </div>
+</section>
+
+<!-- ============================ 报告弹层 ============================ -->
+<div id="reportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+  <div class="modal-card">
+    <header class="modal-head">
+      <h2 id="reportTitle">结业报告</h2>
+      <button id="reportClose" class="icon-btn" aria-label="关闭">✕</button>
+    </header>
+    <div id="reportBody" class="modal-body"></div>
+    <footer class="modal-foot">
+      <input id="reportName" class="text-input" placeholder="你的名字（会写进报告）" maxlength="24">
+      <button id="reportCopy" class="ghost-btn">复制 Markdown</button>
+      <button id="reportDownload" class="primary-btn">下载 .md</button>
+    </footer>
+  </div>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<!-- 顺序：工具 → 沙盒内核 → AI 命令包 → 课程数据 → 关卡 → 进度 → 报告 → 终端 → 界面 -->
+<script src="js/util.js"></script>
+<script src="js/sandbox.js"></script>
+<script src="js/sandbox-ai.js"></script>
+<script src="js/day.js"></script>
+<script src="js/gate.js"></script>
+<script src="js/progress.js"></script>
+<script src="js/report.js"></script>
+<script src="js/term.js"></script>
+<script src="js/data/d1.js"></script>
+<script src="js/data/d2.js"></script>
+<script src="js/data/d3.js"></script>
+<script src="js/data/d4.js"></script>
+<script src="js/data/d5.js"></script>
+<script src="js/data/d6.js"></script>
+<script src="js/data/d7.js"></script>
+<script src="js/data/d0.js"></script>
+<script src="js/data/glossary.js"></script>
+<script src="js/data/skills.js"></script>
+<script src="js/data/quiz/d1.js"></script>
+<script src="js/data/quiz/d2.js"></script>
+<script src="js/data/quiz/d3.js"></script>
+<script src="js/data/quiz/d4.js"></script>
+<script src="js/data/quiz/d5.js"></script>
+<script src="js/data/quiz/d6.js"></script>
+<script src="js/data/quiz/d7.js"></script>
+<script src="js/dict.js"></script>
+<script src="js/quiz.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
