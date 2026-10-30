@@ -182,7 +182,8 @@ g.clearInterval = clearInterval;
 
 /* ------------------------------ 加载所有脚本 ------------------------------ */
 
-const order = [...html.matchAll(/<script src="([^"]+)"><\/script>/g)].map(function (m) { return m[1]; });
+/* 资源地址形如 js/app.js?v=<内容哈希>（tools/stamp-assets.js 打的），只取路径 */
+const order = [...html.matchAll(/<script src="([^"?]+)(?:\?[^"]*)?"><\/script>/g)].map(function (m) { return m[1]; });
 order.forEach(function (f) {
   vm.runInContext(fs.readFileSync(at(f), 'utf8'), sandbox, { filename: f });
 });
@@ -473,6 +474,21 @@ ok(LX.Days.get('d1').title.indexOf('项目地基') >= 0, 'Day1 标题复原成�
   LX.Days.get('d1').title);
 ok(LX.Days.get('d1').lessons[0].body.indexOf('进任何一台机器') >= 0, '正文复原成中文');
 ok($('#btnLang').textContent === 'EN', '按钮复原成 EN', $('#btnLang').textContent);
+
+console.log('\n[17] 静态资源版本号（防浏览器缓存旧版）');
+const buildTag = /<html[^>]*\sdata-build="([0-9a-f]{8})"[^>]*>/.exec(html);
+ok(!!buildTag, 'index.html 的 <html> 上有 data-build 构建号', buildTag ? buildTag[1] : '没有');
+const assetRefs = [...html.matchAll(/(?:href|src)="((?:css|js)\/[^"?#]+?\.(?:css|js))(?:\?v=([0-9a-f]{8}))?"/g)];
+ok(assetRefs.length >= 40, '找得到 css/js 资源引用', String(assetRefs.length));
+const noVer = assetRefs.filter(function (m) { return !m[2]; }).map(function (m) { return m[1]; });
+ok(!noVer.length, '每个资源都带 ?v= 版本号（跑 node tools/stamp-assets.js）', noVer.join(', '));
+const staleVer = assetRefs.filter(function (m) {
+  const f = at(m[1]);
+  if (!fs.existsSync(f)) return true;
+  const real = require('crypto').createHash('md5').update(fs.readFileSync(f)).digest('hex').slice(0, 8);
+  return real !== (m[2] || '');
+}).map(function (m) { return m[1]; });
+ok(!staleVer.length, '版本号与文件内容一致（改完 js/css 要重新 stamp）', staleVer.join(', '));
 
 console.log('\n' + (fail ? 'SMOKE FAIL' : 'SMOKE PASS') + '：' + pass + ' 通过 / ' + fail + ' 失败\n');
 process.exit(fail ? 1 : 0);

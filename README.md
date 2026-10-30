@@ -357,12 +357,13 @@ LX.Days.add({
 
 ## 14. 自检脚本
 
-三个脚本都只用 Node 内置模块，不用装依赖、不用开浏览器：
+四个脚本都只用 Node 内置模块，不用装依赖、不用开浏览器：
 
 ```powershell
 node tools/check-course.js   # 课程内容 + 判分逻辑 + 深度门槛
 node tools/check-ui.js       # 界面层冒烟测试
 node tools/check-en.js       # 英文覆盖率 + 中英来回切复原
+node tools/stamp-assets.js   # 给 css/js 打内容哈希版本号（发布前跑；--check 只检查）
 ```
 
 `check-course.js` 做五件事：
@@ -381,19 +382,19 @@ node tools/check-en.js       # 英文覆盖率 + 中英来回切复原
 结构：7 天 / 21 关 / 104 条示例命令
 深度：104 条命令卡 / 314 个 token / 56 道题 / 182 条词典 / 11 项能力
 
-PASS：313 通过 / 0 失败
+PASS：913 通过 / 0 失败
 ```
 
-`check-ui.js` 用一套迷你 DOM 顶替浏览器，按 `index.html` 里的顺序加载全部脚本，然后断言 76 项：
+`check-ui.js` 用一套迷你 DOM 顶替浏览器，按 `index.html` 里的顺序加载全部脚本，然后断言 102 项：
 首屏 5 小节 + 3 张关卡卡 + 1 张闭卷挑战卡、点 `▶ 运行` 真的把命令送进了当天的工作区、跑完一天的示例命令后三关自动变绿、
 切天时终端跟着换工作区、`~` / `Esc` / 主题切换、命令卡与 token 渲染、点 token 打开词典抽屉、`#/dict` 搜索收窄、
 自测答对计入进度 / 答错进错题本、终端 `setSize` / 全屏 / Esc 先退全屏 / 字号持久化、`#/start` 预备课、
 报告四宫格 + 能力矩阵、`#/guide` 使用说明页（每节一张卡片、目录条数与节数一致、正文都渲染出 Markdown）、
 `EN / 中` 切换（默认中文 → 切英文后按钮 / 网页标题 / 天标题 / 报告 / 说明页一起变，语言写进本机设置 → 再切回中文全部复原）、
-`⟳` 与「清空全部进度」的效果。正常输出结尾是：
+`⟳` 与「清空全部进度」的效果、以及静态资源的 `?v=` 版本号与文件内容是否一致。正常输出结尾是：
 
 ```text
-SMOKE PASS：76 通过 / 0 失败
+SMOKE PASS：102 通过 / 0 失败
 ```
 
 `check-en.js` 把英文覆盖变成硬指标：遍历 `LX.I18N.contentSlots()` 拿到每一个该翻的位置（1884 处 / 约 4.5 万字），
@@ -405,7 +406,11 @@ SMOKE PASS：76 通过 / 0 失败
   位置 1884/1884，字数 44582/44582（100%）
 ```
 
-三个脚本都用退出码表示结果（0 = 全通过），可以直接挂到 CI 上。
+四个脚本都用退出码表示结果（0 = 全通过），可以直接挂到 CI 上。
+
+`stamp-assets.js` 不是测试，是**发布前的准备**：它把 `css/*.css`、`js/**/*.js` 的地址改成 `?v=<内容哈希>`，
+并把整页构建号写进 `<html data-build="…">`。原因见第 16 节「打开还是旧版」。它幂等，重复跑结果不变；
+`node tools/stamp-assets.js --check` 只比对不写盘，版本号过期就退出码 1（适合放在提交前）。
 
 ## 15. 已知限制（写课程时请避开）
 
@@ -435,8 +440,18 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\deploy.ps1
 日常小改也可以不用脚本（地址永远不变，Pages 会自动重建）：
 
 ```powershell
+node tools/stamp-assets.js      # 改了 js/css 先重新打版本号（见下面「打开还是旧版」）
 git add -A; git commit -m "update: xxx"; git push
 ```
+
+**「打开还是旧版」是怎么回事？** GitHub Pages 给所有文件都回 `cache-control: max-age=600`（10 分钟，站点改不了），
+所以 push 完、甚至 Pages 已经重建完，浏览器仍可能拿着 10 分钟前的旧缓存 —— 看起来就是「怎么还是以前那个版本」。
+`tools/stamp-assets.js` 就是治这个的：每个 `css/*.css`、`js/**/*.js` 的地址都挂上 `?v=<内容哈希>`，
+文件一变地址就变，浏览器只能重新下载；没变的文件地址不变，照旧走缓存。整页构建号写在 `<html data-build="…">`，
+想知道线上是哪一版，看这一项就行。
+
+万一还是旧版：`Ctrl + F5` 强刷一次，或者在地址后面随便加个参数（`…/ai-dev-7days/?v=2`）。
+这两种都只是骗过缓存，真正让「以后每次都自动新」的是 `stamp-assets.js`。
 
 仓库名、包含/排除规则、验证地址都在 `publish.config.json`；完整流程与排障见 `PUBLISH.md`。
 纯静态站点，`_*` 开头的调试文件与 `*.out` 不会进仓库（见 `.gitignore`）。

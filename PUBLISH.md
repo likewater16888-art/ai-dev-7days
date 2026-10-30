@@ -50,8 +50,27 @@
 命令行等价操作：
 
 ```powershell
+node tools/stamp-assets.js   # 改了 js/css 才需要：重打 ?v= 版本号
 git add -A; git commit -m "update: xxx"; git push
 ```
+### 5.1 「更新完了，打开还是旧版」
+
+GitHub Pages 给所有文件回 `cache-control: max-age=600`（10 分钟，站点这边改不了）。所以 push 完、Pages 也重建完了，
+浏览器仍可能拿旧缓存 —— 这不是没发布成功，先确认再动手：
+
+```powershell
+# 1. 线上到底是哪一版？比对 index.html 的 md5（本地按 LF 归一化后比）
+node -e "const h=require('https'),c=require('crypto'),f=require('fs');h.get('https://likewater16888-art.github.io/ai-dev-7days/index.html',r=>{let d='';r.on('data',x=>d+=x);r.on('end',()=>{console.log('remote',c.createHash('md5').update(d).digest('hex'));console.log('local ',c.createHash('md5').update(f.readFileSync('index.html','utf8').replace(/\r\n/g,'\n')).digest('hex'))})})"
+```
+
+两个 md5 一样 = 线上就是最新的，你看到旧版纯粹是浏览器缓存。
+
+治这个的正解是 `node tools/stamp-assets.js`：它把 `css/*.css`、`js/**/*.js` 的地址改成 `?v=<内容哈希>`，
+文件一变地址就变，浏览器没法复用旧缓存；没变的文件地址不变，照旧走缓存。整页构建号写在
+`<html data-build="…">`，一眼能看出线上是哪一版。幂等，重复跑结果不变；`--check` 只检查不写盘。
+
+临时救急：`Ctrl + F5` 强刷，或地址后加个参数（`…/ai-dev-7days/?v=2`）。
+
 
 ## 6. 不想公开源码怎么办
 
@@ -64,6 +83,7 @@ git add -A; git commit -m "update: xxx"; git push
 | --- | --- | --- |
 | Pages 里看不到 `main` 分支 | 还没 push 成功 | 先 `git push -u origin main` |
 | 打开是 404 | Pages 首次构建中 | 等 1–2 分钟；确认 Settings→Pages 的 Source 是 `main` / `(root)` |
+| 打开还是旧版 | 浏览器缓存（Pages 固定 `max-age=600`） | `Ctrl + F5` 强刷；发布前跑 `node tools/stamp-assets.js`（见 5.1） |
 | 页面白屏、控制台 404 | 仓库根目录不是站点根目录 | 保证 `index.html` 在仓库根目录 |
 | 关卡一直是灰的 | 命令没在终端里执行（关卡只认沙盒终态） | 点小节里的 `▶ 运行`，或按 `~` 打开终端自己敲 |
 | 课程内容显示不全 | `js/data/d1.js … d7.js` 没提交 | `git add js/data` 后重新发布 |

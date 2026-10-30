@@ -244,6 +244,14 @@ if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot '.git'))) {
 & git config user.name $Owner
 & git config user.email $Email
 & git symbolic-ref HEAD ('refs/heads/' + $Branch) *> $null
+# 资源版本号：GitHub Pages 固定 max-age=600，不打 ?v= 的话浏览器会用 10 分钟旧缓存
+if (Have 'node') {
+  & node (Join-Path $PSScriptRoot 'tools/stamp-assets.js') *> $null
+  if ($LASTEXITCODE -eq 0) { Good 'asset versions stamped (?v= / data-build)' }
+  else { Warn 'stamp-assets failed - keeping previous version numbers' }
+} else {
+  Warn 'node not found - skip asset stamping (browser may serve stale cache)'
+}
 
 $null = & git add -A
 $staged = (& git diff --cached --name-only)

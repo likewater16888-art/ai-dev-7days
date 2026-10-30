@@ -69,7 +69,8 @@ function boot() {
 
   /* 英文文件和 index.html 用同一份清单，避免「加了文件忘了引」 */
   var html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-  var re = /<script src="(js\/data\/en\/[^"]+)"><\/script>/g;
+  /* 资源地址可能带 ?v=<内容哈希>（tools/stamp-assets.js 打的），只取路径 */
+  var re = /<script src="(js\/data\/en\/[^"?]+)(?:\?[^"]*)?"><\/script>/g;
   var list = [];
   var m;
   while ((m = re.exec(html))) list.push(m[1]);
