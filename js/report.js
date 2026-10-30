@@ -17,6 +17,11 @@
   var LX = global.LX = global.LX || {};
   var util = LX.util;
 
+  /** 界面文案（js/i18n.js） */
+  function t(key, vars) {
+    return (LX.I18N && LX.I18N.t) ? LX.I18N.t(key, vars) : String(key);
+  }
+
   function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
   function fmtDate(ts) {
@@ -27,12 +32,14 @@
 
   /** 称号：按通过关卡的比例给（项目 + 自测全绿再升一档） */
   function levelOf(pct, projectOk, quizPct) {
-    if (pct >= 100 && projectOk && quizPct >= 90) return { key: 'grad', title: '可交付 · 7 天毕业' };
-    if (pct >= 100) return { key: 'grad', title: 'AI 应用开发 · 7 天毕业' };
-    if (pct >= 70) return { key: 'senior', title: '能独立跑通 AI 项目' };
-    if (pct >= 40) return { key: 'junior', title: '手上已经有真东西了' };
-    if (pct > 0) return { key: 'starter', title: '刚上路，继续推' };
-    return { key: 'new', title: '还没开始' };
+    var key = 'new';
+    if (pct >= 100 && projectOk && quizPct >= 90) key = 'deliver';
+    else if (pct >= 100) key = 'grad';
+    else if (pct >= 70) key = 'senior';
+    else if (pct >= 40) key = 'junior';
+    else if (pct > 0) key = 'starter';
+    /* deliver 和 grad 共用一个 key（报告里的徽章只看「毕业」） */
+    return { key: key === 'deliver' ? 'grad' : key, title: t('rep.lv.' + key) };
   }
 
   function quizOf() { return (LX.Quiz && LX.Quiz.all) ? LX.Quiz.all() : []; }
@@ -161,7 +168,7 @@
       var level = levelOf(overall.pct, !!(project && project.ok), quiz.pct);
 
       return {
-        name: settings.name || '同学',
+        name: settings.name || t('rep.anon'),
         generatedAt: Date.now(),
         overall: overall,
         days: days,
@@ -182,42 +189,55 @@
     text: function (data) {
       var d = data || Report.build();
       var L = [];
-      L.push('# AI 应用开发 7 天 · 学习报告');
+      L.push(t('md.title'));
       L.push('');
-      L.push('- 姓名：' + d.name);
-      L.push('- 生成时间：' + fmtDate(d.generatedAt));
-      L.push('- 通关关卡：' + d.overall.done + ' / ' + d.overall.total + '（' + d.overall.pct + '%）');
-      L.push('- 自测正确率：' + d.quiz.right + ' / ' + d.quiz.total + '（' + d.quiz.pct + '%）');
-      L.push('- 闭卷挑战：' + d.challengeOk + ' / ' + d.challenges.length + ' 通过');
-      L.push('- 验证次数：' + d.attempts.total + ' 次（通过 ' + d.attempts.passes + ' · 未通过 ' + d.attempts.fails + '）');
-      L.push('- 能力项：' + d.skillsProven + ' / ' + d.skills.length + ' 已证明');
+      L.push(t('md.name', { name: d.name }));
+      L.push(t('md.time', { time: fmtDate(d.generatedAt) }));
+      L.push(t('md.gates', { done: d.overall.done, total: d.overall.total, pct: d.overall.pct }));
+      L.push(t('md.quiz', { right: d.quiz.right, total: d.quiz.total, pct: d.quiz.pct }));
+      L.push(t('md.challenges', { ok: d.challengeOk, total: d.challenges.length }));
+      L.push(t('md.attempts', { n: d.attempts.total, pass: d.attempts.passes, fail: d.attempts.fails }));
+      L.push(t('md.skills', { proven: d.skillsProven, total: d.skills.length }));
       if (d.project) {
-        L.push('- 结业项目：' + d.project.done + ' / ' + d.project.total + (d.project.ok ? '（可交付）' : ''));
+        L.push(t('md.project', {
+          done: d.project.done,
+          total: d.project.total,
+          deliver: d.project.ok ? t('md.deliver') : ''
+        }));
       }
-      L.push('- 评价：' + d.level.title);
+      L.push(t('md.level', { title: d.level.title }));
       L.push('');
 
       d.days.forEach(function (day) {
-        L.push('## ' + day.label + ' · ' + day.title + '（' + day.done + '/' + day.total + '）');
+        L.push(t('md.day', { label: day.label, title: day.title, done: day.done, total: day.total }));
         day.gates.forEach(function (g) {
           L.push('- ' + (g.ok ? '✅' : '⬜') + ' ' + g.title +
-            (g.ok ? '　（通过 ' + g.passes + ' 次）' : ''));
+            (g.ok ? t('md.gatePass', { n: g.passes }) : ''));
         });
         if (day.quiz.total) {
-          L.push('- 🧠 自测 ' + day.quiz.right + '/' + day.quiz.total + '（' + day.quiz.pct + '%）');
+          L.push(t('md.quizLine', { right: day.quiz.right, total: day.quiz.total, pct: day.quiz.pct }));
         }
         if (day.challenge) {
-          L.push('- 🔒 闭卷挑战：' + (day.challenge.ok ? '已通过' : '未通过') +
-            (day.challenge.hinted ? '（借助提示）' : ''));
+          L.push(t('md.challenge', {
+            state: (day.challenge.ok ? t('md.chPass') : t('md.chFail')) +
+              (day.challenge.hinted ? t('md.hinted') : '')
+          }));
         }
         L.push('');
       });
 
-      L.push('## 能力矩阵');
+      L.push(t('md.skillsHead'));
       d.skills.forEach(function (s) {
         var mark = s.state === 'proven' ? '✅' : (s.state === 'partial' ? '🟡' : '⬜');
-        L.push('- ' + mark + ' ' + s.name + '（' + s.level + '）· 关卡 ' + s.gatesOk + '/' + s.gates.length +
-          ' · 自测 ' + s.quizRight + '/' + s.quizTotal);
+        L.push(t('md.skill', {
+          mark: mark,
+          name: s.name,
+          level: (LX.I18N && LX.I18N.skillLevel) ? LX.I18N.skillLevel(s.level) : s.level,
+          ok: s.gatesOk,
+          total: s.gates.length,
+          right: s.quizRight,
+          qtotal: s.quizTotal
+        }));
       });
       L.push('');
 
@@ -230,20 +250,20 @@
       }
 
       if (d.wrong.length) {
-        L.push('## 错题本（' + d.wrong.length + ' 题）');
+        L.push(t('md.wrong', { n: d.wrong.length }));
         d.wrong.forEach(function (w) {
-          L.push('- [' + String(w.dayId).toUpperCase() + '] ' + w.q);
-          L.push('  - 解析：' + (w.why || ''));
+          L.push(t('md.wrongItem', { day: String(w.dayId).toUpperCase(), q: w.q }));
+          L.push(t('md.wrongWhy', { why: w.why || '' }));
         });
         L.push('');
       }
 
       if (d.next) {
-        L.push('> 下一步：' + d.next.day + ' · ' + d.next.title);
+        L.push(t('md.next', { day: d.next.day, title: d.next.title }));
       } else if (d.project && !d.project.ok) {
-        L.push('> 21 关全过。下一步：把结业项目剩下 ' + (d.project.total - d.project.done) + ' 项做完。');
+        L.push(t('md.nextProject', { n: d.project.total - d.project.done }));
       } else {
-        L.push('> 全部关卡与项目都完成——可以把它写进简历，去投递了。');
+        L.push(t('md.done'));
       }
       return L.join('\n') + '\n';
     },
@@ -272,7 +292,12 @@
       head.appendChild(util.el('div', { className: 'rep-title', text: d.level.title }));
       head.appendChild(util.el('div', {
         className: 'rep-sub',
-        text: d.name + ' · ' + fmtDate(d.generatedAt) + ' · 通关 ' + d.overall.done + '/' + d.overall.total
+        text: t('rep.sub', {
+          name: d.name,
+          time: fmtDate(d.generatedAt),
+          done: d.overall.done,
+          total: d.overall.total
+        })
       }));
       root.appendChild(head);
 
@@ -285,10 +310,10 @@
       /* 四个数字：关卡 / 自测 / 挑战 / 能力 */
       var stats = util.el('div', { className: 'rep-stats' });
       [
-        { k: '关卡', v: d.overall.done + '/' + d.overall.total, cls: d.overall.passed ? 'is-ok' : '' },
-        { k: '自测', v: d.quiz.right + '/' + d.quiz.total, cls: d.quiz.pct >= 80 ? 'is-ok' : '' },
-        { k: '闭卷', v: d.challengeOk + '/' + d.challenges.length, cls: (d.challenges.length && d.challengeOk === d.challenges.length) ? 'is-ok' : '' },
-        { k: '能力', v: d.skillsProven + '/' + d.skills.length, cls: d.skillsProven === d.skills.length ? 'is-ok' : '' }
+        { k: t('rep.stat.gate'), v: d.overall.done + '/' + d.overall.total, cls: d.overall.passed ? 'is-ok' : '' },
+        { k: t('rep.stat.quiz'), v: d.quiz.right + '/' + d.quiz.total, cls: d.quiz.pct >= 80 ? 'is-ok' : '' },
+        { k: t('rep.stat.challenge'), v: d.challengeOk + '/' + d.challenges.length, cls: (d.challenges.length && d.challengeOk === d.challenges.length) ? 'is-ok' : '' },
+        { k: t('rep.stat.skill'), v: d.skillsProven + '/' + d.skills.length, cls: d.skillsProven === d.skills.length ? 'is-ok' : '' }
       ].forEach(function (s) {
         var box = util.el('div', { className: 'rep-stat ' + s.cls });
         box.appendChild(util.el('b', { text: s.v }));
@@ -310,7 +335,7 @@
         day.gates.forEach(function (g) {
           dots.appendChild(util.el('i', {
             className: g.ok ? 'ok' : 'no',
-            attrs: { title: g.title + (g.ok ? '（已通过）' : '（未通过）') }
+            attrs: { title: g.title + (g.ok ? t('rep.gatePass') : t('rep.gateFail')) }
           }));
         });
         row.appendChild(dots);
@@ -318,13 +343,13 @@
         row.appendChild(util.el('span', {
           className: 'rep-day-quiz' + (day.quiz.pct >= 80 ? ' is-ok' : ''),
           text: '🧠 ' + day.quiz.right + '/' + day.quiz.total,
-          attrs: { title: '自测正确率' }
+          attrs: { title: t('rep.quizTitle') }
         }));
         if (day.challenge) {
           row.appendChild(util.el('span', {
             className: 'rep-day-ch ' + (day.challenge.ok ? 'is-ok' : 'is-no'),
             text: day.challenge.ok ? '🔒✓' : '🔒',
-            attrs: { title: day.challenge.title + (day.challenge.hinted ? '（借助提示通过）' : '') }
+            attrs: { title: day.challenge.title + (day.challenge.hinted ? t('rep.hinted') : '') }
           }));
         }
         row.appendChild(util.el('span', {
@@ -337,10 +362,10 @@
 
       /* 能力矩阵 */
       var skHead = util.el('div', { className: 'rep-sec-head' });
-      skHead.appendChild(util.el('b', { text: '能力矩阵' }));
+      skHead.appendChild(util.el('b', { text: t('rep.skills') }));
       skHead.appendChild(util.el('span', {
         className: 'muted',
-        text: '✅ 已证明（关卡全过 + 自测答对） · 🟡 部分 · ⬜ 还没证据'
+        text: t('rep.skillsNote')
       }));
       root.appendChild(skHead);
 
@@ -354,10 +379,10 @@
         var body = util.el('div', { className: 'rep-skill-body' });
         var line = util.el('div', { className: 'rep-skill-top' });
         line.appendChild(util.el('b', { text: s.name }));
-        line.appendChild(util.el('span', { className: 'rep-skill-level', text: s.level }));
+        line.appendChild(util.el('span', { className: 'rep-skill-level', text: (LX.I18N && LX.I18N.skillLevel) ? LX.I18N.skillLevel(s.level) : s.level }));
         line.appendChild(util.el('span', {
           className: 'rep-skill-num muted',
-          text: '关卡 ' + s.gatesOk + '/' + s.gates.length + ' · 自测 ' + s.quizRight + '/' + s.quizTotal
+          text: t('rep.skillNum', { ok: s.gatesOk, total: s.gates.length, right: s.quizRight, qtotal: s.quizTotal })
         }));
         body.appendChild(line);
         body.appendChild(util.el('div', { className: 'rep-skill-jobs muted', text: s.jobs }));
@@ -372,7 +397,7 @@
         pjHead.appendChild(util.el('b', { text: d.project.title }));
         pjHead.appendChild(util.el('span', {
           className: 'muted',
-          text: d.project.done + ' / ' + d.project.total + (d.project.ok ? ' · 可交付' : '')
+          text: d.project.done + ' / ' + d.project.total + (d.project.ok ? t('rep.deliver') : '')
         }));
         root.appendChild(pjHead);
 
@@ -389,8 +414,8 @@
       /* 错题本 */
       if (d.wrong.length) {
         var wHead = util.el('div', { className: 'rep-sec-head' });
-        wHead.appendChild(util.el('b', { text: '错题本（' + d.wrong.length + '）' }));
-        wHead.appendChild(util.el('span', { className: 'muted', text: '回到对应那天重做一遍就会消失' }));
+        wHead.appendChild(util.el('b', { text: t('rep.wrong', { n: d.wrong.length }) }));
+        wHead.appendChild(util.el('span', { className: 'muted', text: t('rep.wrongNote') }));
         root.appendChild(wHead);
 
         var wl = util.el('div', { className: 'rep-wrong' });
@@ -407,15 +432,15 @@
       var foot = util.el('div', { className: 'rep-foot' });
       foot.appendChild(util.el('span', {
         className: 'muted',
-        text: '验证 ' + d.attempts.total + ' 次 · 通过 ' + d.attempts.passes + ' · 未通过 ' + d.attempts.fails
+        text: t('rep.attempts', { n: d.attempts.total, pass: d.attempts.passes, fail: d.attempts.fails })
       }));
       if (d.next) {
         foot.appendChild(util.el('span', {
           className: 'rep-next',
-          text: '下一步：' + d.next.day + ' · ' + d.next.title
+          text: t('rep.next', { day: d.next.day, title: d.next.title })
         }));
       } else {
-        foot.appendChild(util.el('span', { className: 'rep-next is-done', text: '全部通关 🎉' }));
+        foot.appendChild(util.el('span', { className: 'rep-next is-done', text: t('rep.allDone') }));
       }
       root.appendChild(foot);
 

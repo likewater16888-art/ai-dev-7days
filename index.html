@@ -11,11 +11,12 @@
 <body>
 
 <header class="topbar">
-  <button id="btnMenu" class="icon-btn only-narrow" title="天列表" aria-label="天列表">☰</button>
+  <button id="btnMenu" class="icon-btn only-narrow" title="天列表" aria-label="天列表"
+          data-i18n-title="top.menu" data-i18n-aria="top.menu">☰</button>
 
   <a class="brand" href="#/d1">
     <span class="brand-mark">AI</span>
-    <span class="brand-text">应用开发 <b>7 天</b></span>
+    <span class="brand-text" data-i18n-html="brand.text">应用开发 <b>7 天</b></span>
   </a>
 
   <div class="topbar-mid">
@@ -27,19 +28,22 @@
   </div>
 
   <div class="topbar-actions">
-    <button id="btnReport" class="ghost-btn">结业报告</button>
-    <button id="btnTheme" class="icon-btn" title="切换主题" aria-label="切换主题">◐</button>
+    <button id="btnReport" class="ghost-btn" data-i18n="top.report">结业报告</button>
+    <button id="btnLang" class="icon-btn lang-btn" title="切换到英文界面 · Switch to English"
+            aria-label="切换到英文界面 · Switch to English" data-lang="zh">EN</button>
+    <button id="btnTheme" class="icon-btn" title="切换主题" aria-label="切换主题"
+            data-i18n-title="top.theme" data-i18n-aria="top.theme">◐</button>
   </div>
 </header>
 
 <div class="shell">
   <aside class="sidenav" id="sidenav">
-    <div class="sidenav-head">7 天路线</div>
+    <div class="sidenav-head" data-i18n="nav.title">7 天路线</div>
     <nav id="dayList" class="day-list"></nav>
     <div id="sideExtra" class="side-extra"></div>
     <div class="sidenav-foot">
-      <button id="btnResetAll" class="link-btn">清空全部进度</button>
-      <p class="sidenav-note">进度存在本机浏览器里，不上传。</p>
+      <button id="btnResetAll" class="link-btn" data-i18n="nav.resetAll">清空全部进度</button>
+      <p class="sidenav-note" data-i18n="nav.resetNote">进度存在本机浏览器里，不上传。</p>
     </div>
   </aside>
 
@@ -47,33 +51,39 @@
 </div>
 
 <!-- ============================ 沙盒终端 ============================ -->
-<button id="termFab" class="fab" title="沙盒终端（快捷键 ~）" aria-label="沙盒终端">⌨</button>
+<button id="termFab" class="fab" title="沙盒终端（快捷键 ~）" aria-label="沙盒终端"
+        data-i18n-title="term.fab" data-i18n-aria="term.panel">⌨</button>
 
-<section id="termPanel" class="term-panel" aria-label="沙盒终端">
-  <div id="termGripCorner" class="term-grip-corner" title="拖动改变宽高" aria-hidden="true"></div>
-  <div id="termGrip" class="term-grip" title="拖动改变高度" aria-hidden="true"></div>
+<section id="termPanel" class="term-panel" aria-label="沙盒终端" data-i18n-aria="term.panel">
+  <div id="termGripCorner" class="term-grip-corner" title="拖动改变宽高" aria-hidden="true"
+       data-i18n-title="term.gripCorner"></div>
+  <div id="termGrip" class="term-grip" title="拖动改变高度" aria-hidden="true"
+       data-i18n-title="term.grip"></div>
   <header class="term-head">
     <span class="term-dot"></span>
-    <span id="termScenario" class="term-scenario">沙盒</span>
+    <span id="termScenario" class="term-scenario" data-i18n="term.scenario">沙盒</span>
     <span class="term-spacer"></span>
-    <span class="term-sizes" role="group" aria-label="高度档位">
-      <button class="term-btn" data-term-size="s" title="小窗">▁</button>
-      <button class="term-btn" data-term-size="m" title="中窗">▄</button>
-      <button class="term-btn" data-term-size="l" title="大窗">█</button>
+    <span class="term-sizes" role="group" aria-label="高度档位" data-i18n-aria="term.sizesGroup">
+      <button class="term-btn" data-term-size="s" title="小窗" data-i18n-title="term.sizeS">▁</button>
+      <button class="term-btn" data-term-size="m" title="中窗" data-i18n-title="term.sizeM">▄</button>
+      <button class="term-btn" data-term-size="l" title="大窗" data-i18n-title="term.sizeL">█</button>
     </span>
-    <button id="termFontDown" class="term-btn" title="字号变小">A−</button>
-    <button id="termFontUp" class="term-btn" title="字号变大">A+</button>
-    <button id="termCopy" class="term-btn" title="复制全部输出">复制</button>
-    <button id="termHelp" class="term-btn" title="可用命令">help</button>
-    <button id="termReset" class="term-btn" title="重置这个工作区">⟳</button>
-    <button id="termFull" class="term-btn" title="全屏（Ctrl+Shift+F）" aria-label="全屏">⛶</button>
-    <button id="termClose" class="term-btn" title="收起">✕</button>
+    <button id="termFontDown" class="term-btn" title="字号变小" data-i18n-title="term.fontDown">A−</button>
+    <button id="termFontUp" class="term-btn" title="字号变大" data-i18n-title="term.fontUp">A+</button>
+    <button id="termCopy" class="term-btn" title="复制全部输出"
+            data-i18n="term.copy" data-i18n-title="term.copyAll">复制</button>
+    <button id="termHelp" class="term-btn" title="可用命令" data-i18n-title="term.help">help</button>
+    <button id="termReset" class="term-btn" title="重置这个工作区" data-i18n-title="term.reset">⟳</button>
+    <button id="termFull" class="term-btn" title="全屏（Ctrl+Shift+F）" aria-label="全屏"
+            data-i18n-title="term.fullOn" data-i18n-aria="term.full">⛶</button>
+    <button id="termClose" class="term-btn" title="收起" data-i18n-title="term.close">✕</button>
   </header>
   <div id="termOut" class="term-out"></div>
   <div class="term-input-row">
     <span id="termPrompt" class="term-prompt">student@ai-box:~$</span>
     <input id="termInput" class="term-input" spellcheck="false" autocomplete="off"
-           autocapitalize="off" autocorrect="off" aria-label="命令输入">
+           autocapitalize="off" autocorrect="off" aria-label="命令输入"
+           data-i18n-aria="term.inputAria">
   </div>
 </section>
 
@@ -81,22 +91,24 @@
 <div id="reportModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
   <div class="modal-card">
     <header class="modal-head">
-      <h2 id="reportTitle">结业报告</h2>
-      <button id="reportClose" class="icon-btn" aria-label="关闭">✕</button>
+      <h2 id="reportTitle" data-i18n="report.title">结业报告</h2>
+      <button id="reportClose" class="icon-btn" aria-label="关闭" data-i18n-aria="report.close">✕</button>
     </header>
     <div id="reportBody" class="modal-body"></div>
     <footer class="modal-foot">
-      <input id="reportName" class="text-input" placeholder="你的名字（会写进报告）" maxlength="24">
-      <button id="reportCopy" class="ghost-btn">复制 Markdown</button>
-      <button id="reportDownload" class="primary-btn">下载 .md</button>
+      <input id="reportName" class="text-input" placeholder="你的名字（会写进报告）" maxlength="24"
+             data-i18n-placeholder="report.namePlaceholder">
+      <button id="reportCopy" class="ghost-btn" data-i18n="report.copy">复制 Markdown</button>
+      <button id="reportDownload" class="primary-btn" data-i18n="report.download">下载 .md</button>
     </footer>
   </div>
 </div>
 
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-<!-- 顺序：工具 → 沙盒内核 → AI 命令包 → 课程数据 → 关卡 → 进度 → 报告 → 终端 → 界面 -->
+<!-- 顺序：工具 → 国际化 → 沙盒内核 → AI 命令包 → 课程数据 → 关卡 → 进度 → 报告 → 终端 → 界面 -->
 <script src="js/util.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/sandbox.js"></script>
 <script src="js/sandbox-ai.js"></script>
 <script src="js/day.js"></script>
@@ -114,6 +126,8 @@
 <script src="js/data/d0.js"></script>
 <script src="js/data/glossary.js"></script>
 <script src="js/data/skills.js"></script>
+<script src="js/data/en.js"></script>
+<script src="js/data/guide.js"></script>
 <script src="js/data/quiz/d1.js"></script>
 <script src="js/data/quiz/d2.js"></script>
 <script src="js/data/quiz/d3.js"></script>
@@ -121,6 +135,18 @@
 <script src="js/data/quiz/d5.js"></script>
 <script src="js/data/quiz/d6.js"></script>
 <script src="js/data/quiz/d7.js"></script>
+<!-- 英文正文：按「位置」覆盖中文字段，缺哪个 key 哪个字段就显示中文（tools/check-en.js 会查） -->
+<script src="js/data/en/d0.js"></script>
+<script src="js/data/en/d1.js"></script>
+<script src="js/data/en/d2.js"></script>
+<script src="js/data/en/d3.js"></script>
+<script src="js/data/en/d4.js"></script>
+<script src="js/data/en/d5.js"></script>
+<script src="js/data/en/d6.js"></script>
+<script src="js/data/en/d7.js"></script>
+<script src="js/data/en/skills.js"></script>
+<script src="js/data/en/quiz.js"></script>
+<script src="js/data/en/glossary.js"></script>
 <script src="js/dict.js"></script>
 <script src="js/quiz.js"></script>
 <script src="js/app.js"></script>

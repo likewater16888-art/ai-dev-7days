@@ -16,10 +16,31 @@
   var drawer = null;
   var drawerState = null;
 
+  /** 界面文案（js/i18n.js） */
+  function t(key, vars) {
+    return (LX.I18N && LX.I18N.t) ? LX.I18N.t(key, vars) : String(key);
+  }
+
   function G() { return LX.Glossary; }
 
+  /** 分组名 / 说明：词典数据里是中文，英文界面查 i18n，缺词时退回原文 */
+  function groupLabel(g) {
+    var key = g.id || 'all';
+    if (LX.I18N && LX.I18N.groupName) return LX.I18N.groupName(key, g.name);
+    return g.name;
+  }
+
+  function groupTip(g) {
+    var key = g.id || 'all';
+    if (LX.I18N && LX.I18N.groupDesc) return LX.I18N.groupDesc(key, g.desc || '');
+    return g.desc || '';
+  }
+
   function chip(group) {
-    return util.el('span', { className: 'dict-chip g-' + group, text: G().groupName(group) });
+    return util.el('span', {
+      className: 'dict-chip g-' + group,
+      text: (LX.I18N && LX.I18N.groupName) ? LX.I18N.groupName(group, G().groupName(group)) : G().groupName(group)
+    });
   }
 
   /** 一条词条卡片 */
@@ -28,7 +49,7 @@
 
     var head = util.el('div', { className: 'dict-card-head' });
     head.appendChild(util.el('code', { className: 'dict-term', text: it.t }));
-    if (it.read) head.appendChild(util.el('span', { className: 'dict-read', text: '读作 ' + it.read }));
+    if (it.read) head.appendChild(util.el('span', { className: 'dict-read', text: t('dict.read', { read: it.read }) }));
     head.appendChild(chip(it.g));
     if (it.d) head.appendChild(util.el('span', { className: 'dict-day', text: String(it.d).toUpperCase() }));
     box.appendChild(head);
@@ -37,7 +58,7 @@
 
     if (it.eg) {
       var eg = util.el('div', { className: 'dict-eg' });
-      eg.appendChild(util.el('span', { className: 'dict-lab', text: '例子' }));
+      eg.appendChild(util.el('span', { className: 'dict-lab', text: t('dict.eg') }));
       eg.appendChild(util.el('code', { text: it.eg }));
       box.appendChild(eg);
     }
@@ -59,13 +80,13 @@
     if (!items.length) {
       state.list.appendChild(util.el('p', {
         className: 'dict-empty muted',
-        text: '没搜到「' + q + '」。换个关键词试试，或者点上面的分组翻一翻。'
+        text: t('dict.empty', { q: q })
       }));
-      state.count.textContent = '0 条';
+      state.count.textContent = t('dict.count', { n: 0 });
       return;
     }
 
-    state.count.textContent = items.length + ' 条';
+    state.count.textContent = t('dict.count', { n: items.length });
     var frag = document.createDocumentFragment();
     items.forEach(function (it) { frag.appendChild(card(it)); });
     state.list.appendChild(frag);
@@ -81,8 +102,8 @@
       className: 'text-input dict-search',
       attrs: {
         type: 'search',
-        placeholder: '搜命令 / 参数 / 符号 / 概念 / 报错，例如 grep、-L、>、显存',
-        'aria-label': '搜索词典'
+        placeholder: t('dict.searchPlaceholder'),
+        'aria-label': t('dict.searchAria')
       }
     });
     bar.appendChild(input);
@@ -100,13 +121,13 @@
     root.appendChild(tabs);
     root.appendChild(list);
 
-    var all = [{ id: '', name: '全部', desc: '整个词典' }].concat(G().groups);
+    var all = [{ id: '', name: t('group.all'), desc: t('group.all.desc') }].concat(G().groups);
     all.forEach(function (g) {
       var n = g.id ? G().byGroup(g.id).length : G().count();
       var btn = util.el('button', {
         className: 'dict-tab',
-        text: g.name + ' ' + n,
-        attrs: { type: 'button', title: g.desc || '' }
+        text: groupLabel(g) + ' ' + n,
+        attrs: { type: 'button', title: groupTip(g) }
       });
       btn.setAttribute('data-group', g.id);
       btn.addEventListener('click', function () {
@@ -134,12 +155,12 @@
 
     drawer = util.el('aside', {
       className: 'dict-drawer',
-      attrs: { id: 'dictDrawer', 'aria-label': '命令词典', 'aria-hidden': 'true' }
+      attrs: { id: 'dictDrawer', 'aria-label': t('dict.drawerAria'), 'aria-hidden': 'true' }
     });
 
     var head = util.el('header', { className: 'dict-head' });
-    head.appendChild(util.el('b', { text: '📖 命令词典' }));
-    var close = util.el('button', { className: 'icon-btn', text: '✕', attrs: { 'aria-label': '关闭词典' } });
+    head.appendChild(util.el('b', { text: t('dict.drawer') }));
+    var close = util.el('button', { className: 'icon-btn', text: '✕', attrs: { 'aria-label': t('dict.closeAria') } });
     close.addEventListener('click', function () { Dict.close(); });
     head.appendChild(close);
     drawer.appendChild(head);
@@ -189,26 +210,51 @@
     /** #/dict 路由用：把词典整页渲染到容器里 */
     page: function (root) {
       if (!root) return;
-      if (!G()) { root.innerHTML = '<p class="muted">词典数据没加载成功。</p>'; return; }
+      if (!G()) { root.innerHTML = '<p class="muted">' + util.escape(t('dict.noData')) + '</p>'; return; }
       root.innerHTML = '';
 
       var head = util.el('div', { className: 'page-head' });
-      head.appendChild(util.el('h1', { text: '命令词典' }));
+      head.appendChild(util.el('h1', { text: t('dict.title') }));
       head.appendChild(util.el('span', {
         className: 'muted',
-        text: G().count() + ' 条：命令 / 参数 / 符号 / 概念 / AI 工具链 / 报错'
+        text: t('dict.sub', { n: G().count() })
       }));
       root.appendChild(head);
 
       root.appendChild(util.el('p', {
         className: 'page-intro',
-        text: '课程里出现的每一个词都能在这里查到。看不懂某条命令时，先来搜它的参数和符号——' +
-          '90% 的"看不懂"其实是参数和符号没被解释。'
+        text: t('dict.intro')
       }));
 
       var box = util.el('div', { className: 'dict-page' });
       root.appendChild(box);
       build(box);
+    },
+
+    /** 语言切换后重建抽屉（分组名、搜索框提示都要换） */
+    refresh: function () {
+      if (!drawer) return this;
+      var q = drawerState ? drawerState.q : '';
+      var group = drawerState ? drawerState.group : '';
+
+      var head = util.$('.dict-head', drawer);
+      if (head) {
+        head.innerHTML = '';
+        head.appendChild(util.el('b', { text: t('dict.drawer') }));
+        var close = util.el('button', { className: 'icon-btn', text: '✕', attrs: { 'aria-label': t('dict.closeAria') } });
+        close.addEventListener('click', function () { Dict.close(); });
+        head.appendChild(close);
+      }
+      drawer.setAttribute('aria-label', t('dict.drawerAria'));
+
+      var body = util.$('.dict-body', drawer);
+      if (!body) return this;
+      drawerState = build(body);
+      drawerState.q = q;
+      drawerState.group = group;
+      if (drawerState.input) drawerState.input.value = q;
+      paint(drawerState);
+      return this;
     }
   };
 

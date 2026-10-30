@@ -20,6 +20,7 @@ global.localStorage = {
 };
 
 js('util.js');
+js('i18n.js');
 js('sandbox.js');
 js('sandbox-ai.js');
 js('day.js');

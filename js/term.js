@@ -17,6 +17,17 @@
 
   var refs = { panel: null, out: null, input: null, prompt: null, scenario: null, fab: null };
 
+  /** 界面文案（js/i18n.js；没加载时退回中文 key 之外的默认值也行） */
+  function t(key, vars) {
+    return (LX.I18N && LX.I18N.t) ? LX.I18N.t(key, vars) : String(key);
+  }
+
+  /** 工作区名字：优先用界面语言，缺词时用 sandbox 自带的中文标签 */
+  function scenarioLabel(id) {
+    var fallback = LX.Sandbox.label(id);
+    return (LX.I18N && LX.I18N.scenario) ? LX.I18N.scenario(id, fallback) : fallback;
+  }
+
   var engine = null;
   var scenario = 'home';
   var historyIdx = -1;
@@ -55,7 +66,7 @@
     if (!engine || want !== engine.scenario) {
       engine = engineFor(want);
       scenario = want;
-      if (refs.scenario) refs.scenario.textContent = LX.Sandbox.label(want);
+      if (refs.scenario) refs.scenario.textContent = scenarioLabel(want);
     }
     return engine;
   }
@@ -118,15 +129,15 @@
     var head = block('is-welcome');
     head.appendChild(util.el('div', {
       className: 't-banner-title',
-      text: '🖥️ AI 沙盒终端 · ' + LX.Sandbox.label(e.scenario)
+      text: t('term.welcomeTitle', { label: scenarioLabel(e.scenario) })
     }));
     head.appendChild(util.el('div', {
       className: 't-banner-text',
-      text: '文件系统完全在你的浏览器内存里：随便 rm -rf，刷新页面或点 ⟳ 就能复原。不联网、不碰真实文件。'
+      text: t('term.welcomeNote')
     }));
     head.appendChild(util.el('div', {
       className: 't-banner-text',
-      text: '试试：ls -la　cat train.csv　conda env list　pip install -r requirements.txt　git status　help'
+      text: t('term.welcomeTry')
     }));
     scrollToEnd();
   }
@@ -235,8 +246,8 @@
     var btn = util.$('#termFull');
     if (!btn) return;
     if (on) btn.classList.add('is-on'); else btn.classList.remove('is-on');
-    btn.setAttribute('title', on ? '退出全屏（Esc）' : '全屏（Ctrl+Shift+F）');
-    btn.setAttribute('aria-label', on ? '退出全屏' : '全屏');
+    btn.setAttribute('title', on ? t('term.fullOff') : t('term.fullOn'));
+    btn.setAttribute('aria-label', on ? t('term.exitFull') : t('term.full'));
   }
 
   /** 全屏开关；不传参 = 切换 */
@@ -342,9 +353,9 @@
         var text = Term.copyOutput();
         if (text && LX.util.copy) {
           LX.util.copy(text).then(function () {
-            copyBtn.textContent = '已复制';
-            setTimeout(function () { copyBtn.textContent = '复制'; }, 1200);
-          }, function () { copyBtn.textContent = '复制失败'; });
+            copyBtn.textContent = t('term.copied');
+            setTimeout(function () { copyBtn.textContent = t('term.copy'); }, 1200);
+          }, function () { copyBtn.textContent = t('term.copyFail'); });
         }
       });
     }
@@ -480,6 +491,26 @@
     /** 字号 +/-（delta 为 +1 / -1），返回新字号 */
     bumpFont: function (delta) {
       return bumpFont(delta || 1);
+    },
+
+    /** 语言切换后重刷面板上的文案（历史输出原样保留） */
+    applyLabels: function () {
+      if (refs.scenario && engine) refs.scenario.textContent = scenarioLabel(engine.scenario);
+      paintFullBtn(Term.isFull());
+
+      var copyBtn = util.$('#termCopy');
+      if (copyBtn) copyBtn.textContent = t('term.copy');
+
+      if (refs.out) {
+        var titles = util.$$('.t-banner-title', refs.out);
+        var texts = util.$$('.t-banner-text', refs.out);
+        if (titles[0] && engine) {
+          titles[0].textContent = t('term.welcomeTitle', { label: scenarioLabel(engine.scenario) });
+        }
+        if (texts[0]) texts[0].textContent = t('term.welcomeNote');
+        if (texts[1]) texts[1].textContent = t('term.welcomeTry');
+      }
+      return Term;
     },
 
     /** 把整屏输出取成纯文本（复制按钮 / 贴给 AI 用） */

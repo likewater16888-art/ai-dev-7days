@@ -418,5 +418,61 @@ ok($$('.rep-stat').length === 4, '报告四宫格渲染', String($$('.rep-stat')
 ok($$('.rep-skill').length >= 10, '能力矩阵渲染', String($$('.rep-skill').length));
 ok(LX.Report.text().indexOf('能力矩阵') >= 0, 'Markdown 含能力矩阵');
 
+console.log('\n[15] 使用说明页（#/guide）');
+const goHash = function (h) {
+  g.location.hash = h;
+  (winOn.hashchange || []).forEach(function (f) { f({ type: 'hashchange' }); });
+};
+goHash('#/guide');
+const gSecs = $$('.guide-sec');
+ok(gSecs.length >= 8 && gSecs.length === LX.Guide.sections.length,
+  '每个 guide.section 都渲染成一张卡片', String(gSecs.length));
+ok(($('.guide-toc') ? $('.guide-toc').querySelectorAll('A').length : 0) === gSecs.length,
+  '目录条目数 = 小节数',
+  String($('.guide-toc') ? $('.guide-toc').querySelectorAll('A').length : 0));
+const gH2 = gSecs.length ? gSecs[0].querySelector('h2') : null;
+ok(!!gH2 && gH2.textContent.indexOf('这是什么') >= 0, '中文界面首节标题是中文',
+  gH2 ? gH2.textContent : 'no h2');
+ok(!!$('.guide-lang-hint'), '说明页顶部有切换语言的提示');
+const gBodies = gSecs.filter(function (s) { return !!s.querySelector('.lesson-body'); }).length;
+ok(gBodies === gSecs.length, '每节都有正文（Markdown 渲染）', String(gBodies));
+
+console.log('\n[16] 中英文界面切换');
+goHash('#/d1');
+ok(LX.I18N.lang() === 'zh', '默认是中文界面', LX.I18N.lang());
+ok(LX.Days.get('d1').title.indexOf('项目地基') >= 0, '中文界面 Day1 标题是中文',
+  LX.Days.get('d1').title);
+ok($('#btnLang').textContent === 'EN', '中文界面按钮显示 EN', $('#btnLang').textContent);
+
+$('#btnLang').click();
+ok(LX.I18N.lang() === 'en', '点按钮切到英文', LX.I18N.lang());
+ok($('#btnLang').textContent === '中', '英文界面按钮变成「中」', $('#btnLang').textContent);
+ok(document.documentElement.getAttribute('lang') === 'en', 'html 的 lang 改成 en',
+  String(document.documentElement.getAttribute('lang')));
+ok(document.title.indexOf(LX.I18N.t('doc.title')) >= 0, '网页标题跟着换', document.title);
+ok(LX.Progress.settings().lang === 'en', '语言写进本机设置',
+  String(LX.Progress.settings().lang));
+ok(!/[\u4e00-\u9fff]/.test(LX.Days.get('d1').gates[0].brief), '关卡说明也换成英文',
+  LX.Days.get('d1').gates[0].brief);
+ok(LX.Days.get('d1').title === 'Project foundations: read the map, then build the house',
+  'Day1 标题换成英文', LX.Days.get('d1').title);
+ok(!/[\u4e00-\u9fff]/.test(LX.Days.get('d1').lessons[0].body), 'Day1 第 1 节正文换成英文');
+ok(!/[\u4e00-\u9fff]/.test(LX.QuizData.d1[0].q), '自测题干换成英文', LX.QuizData.d1[0].q);
+ok(LX.I18N.t('top.report') === 'Report', '顶栏按钮文案换成英文', LX.I18N.t('top.report'));
+ok(LX.Report.text().indexOf(LX.I18N.t('md.skillsHead')) >= 0, '报告 Markdown 换成英文标题');
+
+goHash('#/guide');
+const gH2en = $$('.guide-sec').length ? $$('.guide-sec')[0].querySelector('h2') : null;
+ok(!!gH2en && gH2en.textContent.indexOf('What this is') >= 0, '说明页也切成英文',
+  gH2en ? gH2en.textContent : 'no h2');
+
+goHash('#/d1');
+$('#btnLang').click();
+ok(LX.I18N.lang() === 'zh', '再点一次切回中文', LX.I18N.lang());
+ok(LX.Days.get('d1').title.indexOf('项目地基') >= 0, 'Day1 标题复原成中文',
+  LX.Days.get('d1').title);
+ok(LX.Days.get('d1').lessons[0].body.indexOf('进任何一台机器') >= 0, '正文复原成中文');
+ok($('#btnLang').textContent === 'EN', '按钮复原成 EN', $('#btnLang').textContent);
+
 console.log('\n' + (fail ? 'SMOKE FAIL' : 'SMOKE PASS') + '：' + pass + ' 通过 / ' + fail + ' 失败\n');
 process.exit(fail ? 1 : 0);

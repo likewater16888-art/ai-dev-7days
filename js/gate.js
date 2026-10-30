@@ -30,6 +30,11 @@
 
   var LX = global.LX = global.LX || {};
 
+  /** 界面文案（js/i18n.js）；没加载 i18n 时退回中文原文 */
+  function t(key, vars) {
+    return (LX.I18N && LX.I18N.t) ? LX.I18N.t(key, vars) : String(key);
+  }
+
   /* ------------------------------ 基础工具 ------------------------------ */
 
   function engineOf(scenario) {
@@ -110,63 +115,68 @@
   var CHECKS = {
     dir: function (c, e) {
       var n = nodeAt(e, c.path);
-      if (!n) return okOf(false, '目录不存在');
-      return okOf(n.type === 'dir', n.type === 'dir' ? '目录存在' : '同名文件占用了这个路径');
+      if (!n) return okOf(false, t('chk.noDir'));
+      return okOf(n.type === 'dir', n.type === 'dir' ? t('chk.dirOk') : t('chk.dirBlocked'));
     },
 
     file: function (c, e) {
       var n = nodeAt(e, c.path);
-      if (!n) return okOf(false, '文件不存在');
-      if (n.type === 'dir') return okOf(false, '这是目录，不是文件');
+      if (!n) return okOf(false, t('chk.noFile'));
+      if (n.type === 'dir') return okOf(false, t('chk.isDir'));
       var txt = n.type === 'link' ? (textAt(e, c.path) || '') : (n.content || '');
 
       if (c.minBytes && txt.length < c.minBytes) {
-        return okOf(false, '只有 ' + humanSize(txt.length) + '，太短了');
+        return okOf(false, t('chk.tooSmall', { size: humanSize(txt.length) }));
       }
-      if (c.notEmpty && !txt.trim()) return okOf(false, '文件是空的');
+      if (c.notEmpty && !txt.trim()) return okOf(false, t('chk.empty'));
       if (c.lines) {
         var used = txt.split('\n').filter(function (x) { return x.trim(); }).length;
-        if (used < c.lines) return okOf(false, '只有 ' + used + ' 行有效内容（要 ≥ ' + c.lines + '）');
+        if (used < c.lines) return okOf(false, t('chk.tooFewLines', { used: used, need: c.lines }));
       }
       if (c.contains) {
         var list = Array.isArray(c.contains) ? c.contains : [c.contains];
         for (var i = 0; i < list.length; i++) {
-          if (txt.indexOf(list[i]) < 0) return okOf(false, '内容里没有「' + list[i] + '」');
+          if (txt.indexOf(list[i]) < 0) return okOf(false, t('chk.missingText', { text: list[i] }));
         }
       }
       if (c.regex) {
         var re;
         try { re = new RegExp(c.regex, c.flags || 'm'); } catch (err) { re = null; }
-        if (re && !re.test(txt)) return okOf(false, '内容不匹配 /' + c.regex + '/');
+        if (re && !re.test(txt)) return okOf(false, t('chk.regexMiss', { re: c.regex }));
       }
-      return okOf(true, '文件存在（' + humanSize(txt.length) + '）');
+      return okOf(true, t('chk.fileOk', { size: humanSize(txt.length) }));
     },
 
     absent: function (c, e) {
       var n = nodeAt(e, c.path);
-      return okOf(!n, n ? '它还在' : '已不存在');
+      return okOf(!n, n ? t('chk.stillThere') : t('chk.gone'));
     },
 
     exec: function (c, e) {
       var n = nodeAt(e, c.path);
-      if (!n || n.type === 'dir') return okOf(false, '文件不存在');
-      return okOf((n.mode & 73) !== 0, (n.mode & 73) !== 0 ? '可执行' : '还没有可执行位（x）');
+      if (!n || n.type === 'dir') return okOf(false, t('chk.noFile'));
+      return okOf((n.mode & 73) !== 0, (n.mode & 73) !== 0 ? t('chk.canExec') : t('chk.noExec'));
     },
 
     mode: function (c, e) {
       var n = nodeAt(e, c.path);
-      if (!n) return okOf(false, '文件不存在');
+      if (!n) return okOf(false, t('chk.noFile'));
       var want = typeof c.expect === 'string' ? parseInt(c.expect, 8) : c.expect;
       var masked = n.mode & 511;
-      return okOf(masked === want, '当前 ' + masked.toString(8) + '，需要 ' + want.toString(8));
+      return okOf(masked === want, t('chk.modeNow', {
+        now: masked.toString(8),
+        want: want.toString(8)
+      }));
     },
 
     link: function (c, e) {
       var n = nodeAt(e, c.path);
-      if (!n) return okOf(false, '路径不存在');
-      if (n.type !== 'link') return okOf(false, '这是' + (n.type === 'dir' ? '目录' : '普通文件') + '，不是软链接');
+      if (!n) return okOf(false, t('chk.noPath'));
+      if (n.type !== 'link') {
+        return okOf(false, n.type === 'dir' ? t('chk.notLinkDir') : t('chk.notLinkFile'));
+      }
       if (c.target && String(n.target).indexOf(c.target) < 0) {
-        return okOf(false, '指向 ' + n.target + '，需要指向 ' + c.target);
+        return okOf(false, t('chk.linkWrong', { now: n.target, want: c.target }));
       }
       return okOf(true, '→ ' + n.target);
     }
@@ -180,18 +190,18 @@
     var envs = (e.ai || {}).condaEnvs || {};
     var env = envs[c.name];
     if (!env) {
-      var names = Object.keys(envs).join(' / ') || '（空）';
-      return okOf(false, '没有这个环境，现有：' + names);
+      var names = Object.keys(envs).join(' / ') || t('chk.envNone');
+      return okOf(false, t('chk.envMissing', { names: names }));
     }
     if (c.py && String(env.py).indexOf(String(c.py)) !== 0) {
-      return okOf(false, 'python 是 ' + env.py + '，需要 ' + c.py + '.x');
+      return okOf(false, t('chk.pyWrong', { now: env.py, want: c.py }));
     }
     return okOf(true, 'python ' + env.py);
   };
 
   CHECKS.aiActive = function (c, e) {
     var now = (e.ai || {}).activeEnv;
-    return okOf(now === c.name, '当前激活：' + now);
+    return okOf(now === c.name, t('chk.activeNow', { name: now }));
   };
 
   CHECKS.aiPkg = function (c, e) {
@@ -200,47 +210,53 @@
     var pkgs = ((a.pip || {})[env]) || {};
     var ver = pkgs[c.name];
     if (!ver) {
-      var have = Object.keys(pkgs).sort().join(', ') || '（还没装东西）';
-      return okOf(false, env + ' 里没有 ' + c.name + '，已装：' + have);
+      var have = Object.keys(pkgs).sort().join(', ') || t('chk.pkgNone');
+      return okOf(false, t('chk.pkgMissing', { env: env, name: c.name, have: have }));
     }
     if (c.version && ver !== c.version) {
-      return okOf(false, '装的是 ' + c.name + '==' + ver + '，需要 ' + c.version);
+      return okOf(false, t('chk.pkgWrong', { name: c.name, ver: ver, want: c.version }));
     }
-    return okOf(true, c.name + '==' + ver + '（' + env + '）');
+    return okOf(true, t('chk.pkgOk', { name: c.name, ver: ver, env: env }));
   };
 
   CHECKS.aiRepo = function (c, e) {
     var repos = (e.ai || {}).repos || {};
     var key = c.path ? e.abs(c.path) : Object.keys(repos)[0];
     var st = key ? repos[key] : null;
-    if (!st) return okOf(false, '这里（或指定路径）还没有 git 仓库');
+    if (!st) return okOf(false, t('chk.noRepo'));
 
     if (c.commits && (st.commits || []).length < c.commits) {
-      return okOf(false, '只有 ' + (st.commits || []).length + ' 次提交，需要 ≥ ' + c.commits);
+      return okOf(false, t('chk.fewCommits', {
+        n: (st.commits || []).length,
+        need: c.commits
+      }));
     }
     if (c.message) {
       var hit = (st.commits || []).some(function (cm) {
         return String(cm.msg || '').toLowerCase().indexOf(String(c.message).toLowerCase()) >= 0;
       });
-      if (!hit) return okOf(false, '提交信息里没有「' + c.message + '」');
+      if (!hit) return okOf(false, t('chk.msgMissing', { msg: c.message }));
     }
     if (c.remote && String(st.remote || '').indexOf(c.remote) < 0) {
-      return okOf(false, 'remote 是 ' + (st.remote || '（未设置）'));
+      return okOf(false, t('chk.remoteNow', { remote: st.remote || t('chk.remoteNone') }));
     }
     if (c.branch && st.branch !== c.branch) {
-      return okOf(false, '当前分支是 ' + st.branch + '，需要 ' + c.branch);
+      return okOf(false, t('chk.branchNow', { now: st.branch, want: c.branch }));
     }
     if (c.clean) {
       var s = repoStatus(e, key);
       if (s && !s.clean) {
         var bits = [];
-        if (s.untracked.length) bits.push('未跟踪 ' + s.untracked.join(','));
-        if (s.modified.length) bits.push('已修改 ' + s.modified.join(','));
-        if (s.deleted.length) bits.push('已删除 ' + s.deleted.join(','));
-        return okOf(false, '工作区还有未提交的改动：' + bits.join('；'));
+        if (s.untracked.length) bits.push(t('chk.untracked', { list: s.untracked.join(',') }));
+        if (s.modified.length) bits.push(t('chk.modified', { list: s.modified.join(',') }));
+        if (s.deleted.length) bits.push(t('chk.deleted', { list: s.deleted.join(',') }));
+        return okOf(false, t('chk.dirty', { bits: bits.join(t('chk.sep')) }));
       }
     }
-    return okOf(true, (st.commits || []).length + ' 次提交 · 分支 ' + st.branch);
+    return okOf(true, t('chk.commitOk', {
+      n: (st.commits || []).length,
+      branch: st.branch
+    }));
   };
 
   CHECKS.aiDownload = function (c, e) {
@@ -250,23 +266,25 @@
       if (c.dir && String(d.dir).indexOf(c.dir) < 0) return false;
       return true;
     })[0];
-    return okOf(!!hit, hit ? '已下载到 ' + prettyPath(e, hit.dir) : '没有下载记录');
+    return okOf(!!hit, hit
+      ? t('chk.downloaded', { path: prettyPath(e, hit.dir) })
+      : t('chk.noDownload'));
   };
 
   CHECKS.aiSession = function (c, e) {
     var s = ((e.ai || {}).sessions || {})[c.name];
-    return okOf(!!s, s ? '已在运行（端口 ' + (s.port || '?') + '）' : '还没启动');
+    return okOf(!!s, s ? t('chk.running', { port: (s.port || '?') }) : t('chk.notStarted'));
   };
 
   CHECKS.aiGpu = function (c, e) {
     var g = (e.ai || {}).gpu || {};
     var used = g.usedMB || 0;
-    return okOf(used >= (c.minMB || 1), '当前显存占用 ' + used + ' MiB');
+    return okOf(used >= (c.minMB || 1), t('chk.vram', { mb: used }));
   };
 
   CHECKS.custom = function (c, e) {
     var r;
-    try { r = c.fn(e, c); } catch (err) { return okOf(false, '检查出错：' + (err && err.message)); }
+    try { r = c.fn(e, c); } catch (err) { return okOf(false, t('chk.err', { msg: (err && err.message) })); }
     if (r && typeof r === 'object') return okOf(r.ok, r.got || '');
     return okOf(!!r, r === true ? '' : String(r == null ? '' : r));
   };
@@ -278,20 +296,24 @@
     if (c.why) return c.why;
     var p = c.path ? prettyPath(e, c.path) : '';
     switch (c.t) {
-      case 'dir': return p + ' 是一个目录';
-      case 'file': return p + ' 存在' + (c.contains ? '且包含指定内容' : '');
-      case 'absent': return p + ' 不存在';
-      case 'exec': return p + ' 可执行（有 x 权限）';
-      case 'mode': return p + ' 权限是 ' + c.expect;
-      case 'link': return p + ' 是软链接';
-      case 'aiEnv': return 'conda 环境 ' + c.name + (c.py ? '（python ' + c.py + '）' : '') + ' 存在';
-      case 'aiActive': return '当前激活环境是 ' + c.name;
-      case 'aiPkg': return (c.env || '当前环境') + ' 里有 ' + c.name + (c.version ? '==' + c.version : '');
-      case 'aiRepo': return 'git 仓库满足要求（提交 / 分支 / 远端）';
-      case 'aiDownload': return '模型已下载';
-      case 'aiSession': return c.name + ' 已启动';
-      case 'aiGpu': return '显存占用 ≥ ' + (c.minMB || 1) + ' MiB';
-      default: return '自定义检查';
+      case 'dir': return t('lbl.dir', { p: p });
+      case 'file': return t(c.contains ? 'lbl.fileContains' : 'lbl.file', { p: p });
+      case 'absent': return t('lbl.absent', { p: p });
+      case 'exec': return t('lbl.exec', { p: p });
+      case 'mode': return t('lbl.mode', { p: p, expect: c.expect });
+      case 'link': return t('lbl.link', { p: p });
+      case 'aiEnv': return c.py
+        ? t('lbl.aiEnvPy', { name: c.name, py: c.py })
+        : t('lbl.aiEnv', { name: c.name });
+      case 'aiActive': return t('lbl.aiActive', { name: c.name });
+      case 'aiPkg': return c.version
+        ? t('lbl.aiPkgVer', { env: c.env || t('lbl.envNow'), name: c.name, ver: c.version })
+        : t('lbl.aiPkg', { env: c.env || t('lbl.envNow'), name: c.name });
+      case 'aiRepo': return t('lbl.aiRepo');
+      case 'aiDownload': return t('lbl.aiDownload');
+      case 'aiSession': return t('lbl.aiSession', { name: c.name });
+      case 'aiGpu': return t('lbl.aiGpu', { mb: (c.minMB || 1) });
+      default: return t('lbl.custom');
     }
   }
 
@@ -305,7 +327,7 @@
      */
     check: function (c, engine) {
       var fn = CHECKS[c && c.t];
-      if (!fn) return { ok: false, got: '未知的检查类型：' + (c && c.t) };
+      if (!fn) return { ok: false, got: t('chk.unknownType', { t: (c && c.t) }) };
       return fn(c, engine);
     },
 
@@ -316,7 +338,7 @@
      */
     evaluate: function (gate) {
       var g = typeof gate === 'string' ? LX.Days.gate(gate) : gate;
-      if (!g) return { id: String(gate), ok: false, results: [], error: '关卡不存在' };
+      if (!g) return { id: String(gate), ok: false, results: [], error: t('gate.notFound') };
 
       var engine = engineOf(g.scenario);
       var results = (g.checks || []).map(function (c) {

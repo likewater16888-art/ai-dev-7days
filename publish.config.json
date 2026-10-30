@@ -36,7 +36,7 @@
     ".gitignore"
   ],
   "exclude": ["_*", ".git/**", "node_modules/**", "*.out"],
-  "verify": ["{url}", "{url}js/app.js", "{url}js/sandbox.js", "{url}js/data/d7.js", "{url}js/data/glossary.js", "{url}js/data/quiz/d1.js", "{url}css/app.css"],
+  "verify": ["{url}", "{url}js/app.js", "{url}js/i18n.js", "{url}js/sandbox.js", "{url}js/data/d7.js", "{url}js/data/glossary.js", "{url}js/data/guide.js", "{url}js/data/quiz/d1.js", "{url}js/data/en.js", "{url}js/data/en/d1.js", "{url}js/data/en/glossary.js", "{url}css/app.css"],
   "report": {
     "printShareUrl": true,
     "writeBackToReadme": true

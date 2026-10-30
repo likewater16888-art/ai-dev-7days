@@ -18,6 +18,11 @@
   var LX = global.LX = global.LX || {};
   var util = LX.util;
 
+  /** 界面文案（js/i18n.js） */
+  function t(key, vars) {
+    return (LX.I18N && LX.I18N.t) ? LX.I18N.t(key, vars) : String(key);
+  }
+
   function store() { return LX.QuizData || {}; }
 
   function dayIds() {
@@ -77,13 +82,13 @@
       root.innerHTML = '';
 
       var head = util.el('div', { className: 'gates-head' });
-      head.appendChild(util.el('h2', { text: '自测 · ' + list.length + ' 题' }));
+      head.appendChild(util.el('h2', { text: t('quiz.head', { n: list.length }) }));
       var stat = Quiz.stat(dayId);
       head.appendChild(util.el('span', {
         className: 'muted quiz-stat',
         text: list.length
-          ? '答对 ' + stat.right + '/' + stat.total + '　（答错的题会进错题本，结业报告里能看到）'
-          : '这一天还没有题'
+          ? t('quiz.stat', { right: stat.right, total: stat.total })
+          : t('quiz.empty')
       }));
       root.appendChild(head);
 
@@ -106,7 +111,7 @@
     head.appendChild(util.el('p', { className: 'quiz-q', text: q.q }));
     head.appendChild(util.el('span', {
       className: 'quiz-state ' + (stat.ok ? 'is-pass' : (stat.tries ? 'is-fail' : '')),
-      text: stat.ok ? '✓ 答对' : (stat.tries ? '× 再试' : '未作答')
+      text: stat.ok ? t('quiz.right') : (stat.tries ? t('quiz.retry') : t('quiz.idle'))
     }));
     card.appendChild(head);
 
@@ -133,10 +138,10 @@
         why.style.display = '';
         why.className = 'quiz-why ' + (ok ? 'is-ok' : 'is-bad');
         why.innerHTML = '';
-        why.appendChild(util.el('b', { text: ok ? '✓ 对了：' : '× 不对：' }));
+        why.appendChild(util.el('b', { text: ok ? t('quiz.correct') : t('quiz.wrong') }));
         why.appendChild(document.createTextNode(q.why || ''));
         if (!ok) {
-          var retry = util.el('button', { className: 'quiz-retry', text: '再试一次' });
+          var retry = util.el('button', { className: 'quiz-retry', text: t('quiz.again') });
           retry.addEventListener('click', function () {
             var next = questionCard(q, index);
             if (card.parentNode) card.parentNode.replaceChild(next, card);
@@ -147,7 +152,7 @@
         var st = card.querySelector('.quiz-state');
         if (st) {
           st.className = 'quiz-state ' + (ok ? 'is-pass' : 'is-fail');
-          st.textContent = ok ? '✓ 答对' : '× 再试';
+          st.textContent = ok ? t('quiz.right') : t('quiz.retry');
         }
       });
 
